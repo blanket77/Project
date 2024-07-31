@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Backtest App</title>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    
+    <h1>Matplotlib Plot in Flask</h1>
+    
+    <div class="container"> <!--container를 만든다.-->
+        <h1>Backtest App</h1> <!--Backtest App이라는 제목을 만든다.-->
+        <!-- form을 만들고, symbol, startDate, endDate를 입력받는다. -->
+        <form id="backtest-form"> <!--backtest-form을 만든다.-->
+            <label for="symbol">Symbol:</label> <!--symbol을 입력받는다.--> 
+            <input type="text" id="symbol" name="symbol" required><br> <!--symbol을 입력받는다.-->
+            <label for="start-date">Start Date:</label> <!--startDate를 입력받는다.-->
+            <input type="date" id="start-date" name="startDate" required><br> <!--startDate를 입력받는다.-->
+            <label for="end-date">End Date:</label> <!--endDate를 입력받는다.-->
+            <input type="date" id="end-date" name="endDate" required><br> <!--endDate를 입력받는다.-->
+            <button type="submit">Submit</button> <!--submit을 누르면 실행된다.-->
+        </form> <!--form을 만든다.-->
+        <div id="result"></div> <!--result id를 가진 div를 만든다.-->
+    </div>
+
+    <script>
+        //backtest-from id에 있는 submit를 누르면 실행되도록한다.
+        document.getElementById('backtest-form').addEventListener('submit', function(event) {
+            //기본 이벤트를 막는다.
+            event.preventDefault();
+            
+            //symbol, startDate, endDate를 가져온다.
+            const symbol = document.getElementById('symbol').value; //symbol을 가져온다.
+            const startDate = document.getElementById('start-date').value; //startDate를 가져온다.
+            const endDate = document.getElementById('end-date').value; //endDate를 가져온다.
+
+            //fetch를 이용해서 /backtest로 보내고, symbol, startDate, endDate를 json으로 보낸다.
+            fetch('/backtest', { //backtest로 보낸다.
+                method: 'POST', //post 방식으로 보낸다.
+                headers: { //헤더를 json으로 보낸다.
+                    'Content-Type': 'application/json', //json으로 보낸다.
+                },
+                body: JSON.stringify({ symbol, startDate, endDate }), //symbol, startDate, endDate를 json으로 보낸다.
+            })
+            // response를 json으로 바꾸고, data를 가져온다.
+            .then(response => response.json())
+            //data를 가져와서 result id 위치에 넣는다.
+            .then(data => {
+                //result id 위치를 가져온다.
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<h2>Backtest Result</h2><dir>${JSON.stringify(data, null, 2)}</dir>`;
+
+                //div라는 요소를 만들어서 백테스트 결과를 html 안에 넣는다.
+                const iframeDiv = document.createElement('div');
+                iframeDiv.className = "center"; //center라는 클래스를 가지게 한다.
+                //iframeDiv 안에 html을 넣는다.
+                iframeDiv.innerHTML = `
+                    <iframe src="{{ url_for('static', filename='backtest_report.html') }}" width="600" height="400" frameborder="0"></iframe>
+                `;
+                //reulst id 안에 넣는다.
+                resultDiv.appendChild(iframeDiv);
+                
+                //buttonDiv라는 요소를 만들어서 버튼을 만들고, 버튼을 누르면 /download_report로 가게 한다.
+                const buttonDiv = document.createElement('div');
+                //buttonDiv 안에 html을 넣는다.
+                buttonDiv.innerHTML = `
+                    <button id="download-report">Download Report</button>
+                    <a href="/show_plot">Show Plot</a>
+                    <a href="/showReport">Show Report</a>
+                `;
+                //reulst id 안에 넣는다.
+                resultDiv.appendChild(buttonDiv);
+
+                //download-report id를 가지고 와서 거기에 click이벤트를 넣고 click을 하면 /download_report로 가게 한다.
+                //최종적으로는 report.html을 다운받을 수 있게 한다.
+                document.getElementById('download-report').addEventListener('click', function() { //download-report를 누르면
+                    window.location.href = '/download_report'; //download_report로 가게 한다.
+        });
+            })
+            .catch(error => { //에러가 나면 콘솔에 에러를 출력한다.
+                console.error('Error:', error); //에러가 나면 콘솔에 에러를 출력한다.
+            });
+            
+        });
+
+    </script>
+
+</body>
+</html>

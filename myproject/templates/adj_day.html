@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Load Graph and Table</title>
+    <link rel="stylesheet" href="../static/styles_upload.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { // 페이지가 로드되면
+            showResult(); // 페이지가 로드되면 바로 showResult 함수 실행
+        });
+
+        function showResult() {
+            // 서버에서 데이터 가져오기
+            fetch('/day_backtest_adj', { // /day_backtest_adj로 요청
+                method: 'POST' // POST 방식으로 요청
+            })
+            .then(response => { // 응답이 ok이면 json으로 변환
+                if (!response.ok) { // 응답이 ok가 아니면 에러 발생
+                    throw new Error('Network response was not ok'); // 에러 발생
+                }
+                return response.json(); // json으로 변환
+            })
+            .then(data => { // 데이터를 가져와서 처리
+                // 보고서를 표시할 iframe 생성
+                const iframeDiv = document.createElement('div'); // div 요소 생성
+                iframeDiv.className = "center"; // center 클래스 추가
+                // iframeDiv 안에 html을 넣는다.
+                iframeDiv.innerHTML = ` 
+                    <iframe src="{{ url_for('static', filename='day_report_adj.html') }}" width="1500" height="900" frameborder="0"></iframe>
+                `;
+                // body에 iframeDiv 추가
+                document.body.appendChild(iframeDiv);
+
+                // 데이터를 정렬
+                const sortedData = Object.entries(data).sort((a, b) => a[1].return_rate - b[1].return_rate); // 데이터 정렬
+                const sortedData_up = Object.entries(data).sort((a, b) => b[1].return_rate -  a[1].return_rate); // 데이터 정렬
+
+                const top5 = sortedData_up.slice(0, 5); // 상위 5개 
+                const bottom5 = sortedData.slice(0, 5); // 하위 5개
+
+                // 상위 5개 및 하위 5개 주식 테이블 생성
+                const tablesContainer = document.createElement('div'); // div 요소 생성
+                tablesContainer.className = 'tables-container'; // tables-container 클래스 추가
+                document.body.appendChild(tablesContainer); // body에 tablesContainer 추가
+                
+                // top5, bottom5 평균 주가 테이블 생성
+                createTable('Top 5 Stocks', top5, tablesContainer); // 상위 5개 주식 테이블 생성
+                createTable('Bottom 5 Stocks', bottom5, tablesContainer); // 하위 5개 주식 테이블 생성
+
+                return fetch('/sorted_stocks_adj', { // /sorted_stocks_adj로 요청
+                    method: 'POST' // POST 방식으로 요청
+                });
+            })
+            .then(response => { // 응답이 ok이면 json으로 변환
+                if (!response.ok) { // 응답이 ok가 아니면 에러 발생
+                    throw new Error('Network response was not ok'); // 에러 발생
+                }
+                return response.json(); // json으로 변환
+            })
+            .then(data => { // 데이터를 가져와서 처리
+                // 최종 테이블 생성 
+                createLastTable(data); // 최종 테이블 생성
+            })
+            .catch(error => { // 에러 발생 시
+                console.error('There was a problem with the fetch operation:', error); // 에러 출력
+            });
+        }
+
+        // 테이블 생성 함수
+        function createTable(title, data, container) { // title, data, container를 인자로 받는다.
+            const tableDiv = document.createElement('div'); // div 요소 생성
+            tableDiv.className = "stock-table"; // stock-table 클래스 추가
+            
+            const header = document.createElement('h2'); // h2 요소 생성
+            header.textContent = title; // title을 텍스트로 추가
+            tableDiv.appendChild(header); // header를 tableDiv에 추가
+            
+            const table = document.createElement('table'); // table 요소 생성
+            table.border = "1"; // 테이블 테두리 추가
+            
+            const thead = document.createElement('thead'); // thead 요소 생성
+            const headerRow = document.createElement('tr'); // tr 요소 생성
+            const th1 = document.createElement('th'); // th 요소 생성
+            th1.textContent = "Stock"; // 텍스트 추가 
+            const th2 = document.createElement('th'); // th 요소 생성
+            th2.textContent = "Return Rate"; // 텍스트 추가
+            headerRow.appendChild(th1); // th1을 headerRow에 추가
+            headerRow.appendChild(th2); // th2를 headerRow에 추가
+            thead.appendChild(headerRow); // headerRow를 thead에 추가
+            table.appendChild(thead); // thead를 table에 추가
+            
+            const tbody = document.createElement('tbody'); // tbody 요소 생성
+            data.forEach(([stock, {return_rate}]) => { // data를 순회하면서 stock, return_rate를 가져온다.
+                const row = document.createElement('tr'); // tr 요소 생성
+                const td1 = document.createElement('td'); // td 요소 생성
+                td1.textContent = stock; // stock을 텍스트로 추가
+                const td2 = document.createElement('td'); // td 요소 생성
+                td2.textContent = (return_rate * 100).toFixed(2) + '%'; // return_rate를 텍스트로 추가
+                row.appendChild(td1); // td1을 row에 추가
+                row.appendChild(td2); // td2를 row에 추가
+                tbody.appendChild(row); // row를 tbody에 추가
+            });
+            table.appendChild(tbody); // tbody를 table에 추가
+            tableDiv.appendChild(table); // table을 tableDiv에 추가
+            container.appendChild(tableDiv); // tableDiv를 container에 추가
+        }
+
+        // 테이블 정렬 함수
+        function sortTable(table, column, ascending) { // table, column, ascending을 인자로 받는다.
+            const tbody = table.tBodies[0]; // tbody를 가져온다.
+            const rows = Array.from(tbody.querySelectorAll('tr')); // tr을 배열로 만든다.
+
+            const compare = (rowA, rowB) => { // compare 함수
+                const cellA = rowA.children[column].innerText; // rowA의 column을 가져온다.
+                const cellB = rowB.children[column].innerText; // rowB의 column을 가져온다.
+                const a = isNaN(cellA) ? cellA : Number(cellA); // cellA가 숫자가 아니면 cellA를 가져오고, 숫자면 Number로 변환
+                const b = isNaN(cellB) ? cellB : Number(cellB); // cellB가 숫자가 아니면 cellB를 가져오고, 숫자면 Number로 변환
+
+                return (a > b ? 1 : a < b ? -1 : 0) * (ascending ? 1 : -1); // a가 b보다 크면 1, 작으면 -1, 같으면 0을 반환하고, ascending이면 1, 아니면 -1을 반환
+            };
+
+            rows.sort(compare); // rows를 compare로 정렬
+
+            rows.forEach(row => { // rows를 순회하면서
+                row.classList.remove('hidden-row'); // hidden-row 클래스를 제거
+                tbody.appendChild(row); // row를 tbody에 추가
+            });
+
+            rows.slice(5).forEach(row => row.classList.add('hidden-row')); // 5개 이상인 row에 hidden-row 클래스 추가
+        }
+
+        // 테이블을 정렬 가능하게 만드는 함수
+        function makeTableSortable(table) { // table을 인자로 받는다.
+            const headers = table.querySelectorAll('th'); // th를 가져온다.
+            headers.forEach((header, index) => { // headers를 순회하면서
+                header.addEventListener('click', () => { // click 이벤트 추가
+                    const ascending = !header.classList.contains('asc'); // ascending이 아니면 true, 아니면 false
+                    headers.forEach(h => h.classList.remove('asc', 'desc')); // asc, desc 클래스 제거
+                    header.classList.toggle('asc', ascending); // ascending이면 asc, 아니면 desc 클래스 추가
+                    header.classList.toggle('desc', !ascending); // ascending이 아니면 desc, 아니면 asc 클래스 추가
+                    sortTable(table, index, ascending); // table, index, ascending을 sortTable 함수에 넣는다.
+                });
+            });
+        }
+
+        // 종목별로 매수,매도, ROI에서 대한 정렬 생성 함수
+        function createLastTable(data) { // data를 인자로 받는다.
+            const tableDiv = document.createElement('div'); // div 요소 생성
+            tableDiv.className = "center-table"; // center-table 클래스 추가 
+            
+            let tableHtml = '<table border="1"><thead><tr>'; // 테이블 html 생성
+            const headers = ['Stock', 'Buy', 'Sell', 'Total',  // 헤더 생성
+                        'ROI < 0%', 'ROI < -4%',  
+                        'ROI < -8%', 'ROI < -12%'];
+
+            headers.forEach(key => { // headers를 순회하면서
+                tableHtml += `<th>${key}</th>`; // key를 th로 추가
+            });
+            tableHtml += '</tr></thead><tbody>'; // tbody 추가
+
+            data.forEach(item => { // data를 순회하면서
+                tableHtml += '<tr>'; // tr 추가
+                headers.forEach(key => { // headers를 순회하면서
+                    tableHtml += `<td>${item[key]}</td>`; // item[key]를 td로 추가
+                });
+                tableHtml += '</tr>'; // tr 추가
+            });
+
+            tableHtml += '</tbody></table>'; // tbody 추가
+            tableDiv.innerHTML = tableHtml; // tableHtml을 tableDiv에 추가
+            document.body.appendChild(tableDiv); // body에 tableDiv 추가
+
+            const table = tableDiv.querySelector('table'); // tableDiv에서 table을 가져온다.
+            // 테이블 정렬 가능하게 만들기
+            makeTableSortable(table);// makeTableSortable 함수에 table을 넣는다.
+
+            const tbody = table.tBodies[0]; // tbody를 가져온다.
+            const rows = Array.from(tbody.querySelectorAll('tr')); // tr을 배열로 만든다.
+            rows.slice(5).forEach(row => row.classList.add('hidden-row')); // 5개 이상인 row에 hidden-row 클래스 추가
+        }
+    </script>
+</head>
+<body>
+    <h1>Auto Load Graph and Table</h1> <!-- Auto Load Graph and Table이라는 제목을 만든다. -->
+    <div id="tableContainer"></div> <!-- tableContainer id 추가 -->
+</body>
+</html>
