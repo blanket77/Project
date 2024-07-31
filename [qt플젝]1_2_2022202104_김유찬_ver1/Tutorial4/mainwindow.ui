@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>384</width>
+    <height>216</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Puyopuyo, Tetris, PuyopuyoTetris</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="pushButtonPuyopuyo">
+    <property name="geometry">
+     <rect>
+      <x>142</x>
+      <y>58</y>
+      <width>100</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Puyopuyo</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonTetris">
+    <property name="geometry">
+     <rect>
+      <x>142</x>
+      <y>98</y>
+      <width>100</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Tetris</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonPuyopuyoTetris">
+    <property name="geometry">
+     <rect>
+      <x>142</x>
+      <y>138</y>
+      <width>100</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PuyopuyoTetris</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>187</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <addaction name="menud"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
